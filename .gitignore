@@ -1,0 +1,5 @@
+#include <windows.h>
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpszCmdLine, int nCmdShow)
+{
+	int res = MessageBox(0, L"Имя Анатолий на китайском - 阿納托利", L"Имя на китайском", MB_OK | MB_ICONASTERISK);
+}
