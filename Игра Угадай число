@@ -1,0 +1,44 @@
+#include <windows.h>
+#include "string.h"
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpszCmdLine, int nCmdShow)
+{
+	wchar_t temp[150];
+	wchar_t temp1[50];
+	int num = 500;
+	int mn = 250;
+	if (MessageBox(0, L"Начать игру?", L"Игра \"Угадай число\"", MB_OKCANCEL | MB_ICONQUESTION) == IDOK)
+	{
+		int res = MessageBox(0, L"Загадайте число от 1 до 1000.", L"Игра \"Угадай число\"", MB_OK | MB_ICONASTERISK);
+		for (int i = 0;;i++)
+		{
+			wsprintf(temp, L"Ваше число - \t%d ? \nПравильно - \t\"ДА\" \nБольше - \t\t\"НЕТ\" \nМеньше - \t\"Отмена\"", num);
+			wsprintf(temp1, L"Игра \"Угадай число\" попытка № %d", i+1);
+			int ask = MessageBox(0, temp, temp1, MB_YESNOCANCEL | MB_ICONQUESTION);
+			if (ask == IDYES)
+			{
+				wsprintf(temp, L"Компьютер угадал число с - %d раз.", i+1);
+				MessageBox(0, temp, L"Игра \"Угадай число\"", MB_OK | MB_ICONASTERISK);
+				break;
+			}
+			else if (ask == IDNO) // больше
+			{
+				if (mn > 0)
+					num += mn;
+				else
+					num++;
+			}
+			else if(ask == IDCANCEL) // меньше
+			{
+				if (mn > 0)
+					num -= mn;
+				else
+					num--;
+			}
+			
+			if (mn > 0)
+				mn = (mn / 2);
+		}
+	}
+	else
+		MessageBox(0, L"Жаль а так хотелось по играть! Досвидания.", L"Игра \"Угадай число\"", MB_OK | MB_ICONASTERISK);
+}
