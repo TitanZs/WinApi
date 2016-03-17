@@ -1,0 +1,116 @@
+#include <stdio.h>
+#include <tchar.h>
+#include <Windows.h>
+
+wchar_t* buf = new wchar_t[1];
+
+
+VOID AddKeyboardMessageInfo(TCHAR chKey, WORD wRepeat, HWND hWnd);
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLine, INT nCmdShow)
+{
+	buf[0] = '\0';
+	TCHAR szClassWindow[] = TEXT("Название окна");
+
+	WNDCLASSEX wc = {};
+	wc.cbClsExtra = 0;
+	wc.cbSize = sizeof(wc);
+	wc.cbWndExtra = 0;
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = WindowProcedure;
+	wc.lpszClassName = szClassWindow;
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+
+	INT nExitCode = 0;
+
+	if (RegisterClassEx(&wc))
+	{
+		HWND hWindow = CreateWindowEx(0, szClassWindow, TEXT("Keyboard Messages"),
+			WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL,
+			NULL, hInstance, NULL);
+
+		ShowWindow(hWindow, nCmdShow);
+		UpdateWindow(hWindow);
+
+		MSG message = {};
+
+		while (GetMessage(&message, NULL, 0, 0))
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+
+		nExitCode = message.wParam;
+	}
+
+	return nExitCode;
+}
+
+VOID AddKeyboardMessageInfo(TCHAR chKey, WORD wRepeat, HWND hWnd)
+{
+	if (chKey == 8)
+	{
+		int length = wcslen(buf);
+		if (length > 0)
+		{
+			wchar_t* buf2 = new wchar_t[length];
+			int i;
+			for (i = 0; i < length - 1; i++)
+				buf2[i] = buf[i];
+			buf2[i] = '\0';
+			wsprintf(buf, buf2);
+			delete[]buf2;
+		}
+	}
+	else
+	{
+		wchar_t char_[2];
+		wsprintf(char_, L"%c", chKey);
+		
+		if (wcslen(buf) > 0)
+		{
+			int size = wcslen(buf);
+			wchar_t* temp = new wchar_t[size+1];
+			wsprintf(temp, buf);
+			buf = new wchar_t[size+1];
+			wsprintf(buf, temp);
+			wcscat_s(buf, wcslen(buf) + wcslen(temp) + 1, char_);
+			delete[]temp;
+		}
+		else
+		{
+			buf = new wchar_t[wcslen(buf)+1];
+			wsprintf(buf, L"%c", chKey);
+		}
+	}
+	SetWindowText(hWnd, buf);
+	
+}
+
+
+LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = 0;
+
+	switch (nMessage)
+	{
+	case WM_CHAR:
+		AddKeyboardMessageInfo(wParam, LOWORD(lParam), hWindow);
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		delete[]buf;
+		break;
+	default:
+		result = DefWindowProc(hWindow, nMessage, wParam, lParam);
+		break;
+	}
+	return result;
+}
+
