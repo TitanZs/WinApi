@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <tchar.h>
+#include <Windows.h>
+wchar_t buf[50];
+wchar_t buf1[2];
+int size = 0;
+
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLine, INT nCmdShow)
+{
+	
+	wcscat_s(buf, 50, L"Бегушая строка это - круто        ");
+	TCHAR szClassWindow[] = TEXT("Название окна");
+
+	WNDCLASSEX wc = {};
+	wc.cbClsExtra = 0;
+	wc.cbSize = sizeof(wc);
+	wc.cbWndExtra = 0;
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = WindowProcedure;
+	wc.lpszClassName = szClassWindow;
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+
+	INT nExitCode = 0;
+
+	if (RegisterClassEx(&wc))
+	{
+		HWND hWindow = CreateWindowEx(0, szClassWindow, TEXT("Keyboard Messages"),
+			WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL,
+			NULL, hInstance, NULL);
+
+		ShowWindow(hWindow, nCmdShow);
+		UpdateWindow(hWindow);
+
+		MSG message = {};
+
+		while (GetMessage(&message, NULL, 0, 0))
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+
+		nExitCode = message.wParam;
+	}
+
+	return nExitCode;
+}
+
+
+
+
+LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = 0;
+
+	switch (nMessage)
+	{
+	case WM_KEYDOWN:
+		if (wParam == VK_RETURN)
+		{
+			SetTimer(hWindow, 1, 200, NULL);
+		}
+		else if (wParam == VK_ESCAPE)
+		{
+			KillTimer(hWindow, 1);
+		}
+		break;
+	case WM_TIMER:
+		buf1[0] = buf[0];
+		for (int i = 0; i < wcslen(buf); i++)
+			buf[i] = buf[i + 1];
+		buf[wcslen(buf)] = buf1[0];
+
+		SetWindowText(hWindow, buf);
+
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		result = DefWindowProc(hWindow, nMessage, wParam, lParam);
+		break;
+	}
+	return result;
+}
