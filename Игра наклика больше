@@ -1,0 +1,137 @@
+#include <stdio.h>
+#include <tchar.h>
+#include <Windows.h>
+wchar_t buf[50];
+wchar_t buf2[100];
+int tim = 20;
+int size1 = 0;
+int size2 = 0;
+
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLine, INT nCmdShow)
+{
+	
+	TCHAR szClassWindow[] = TEXT("Название окна");
+
+	WNDCLASSEX wc = {};
+	wc.cbClsExtra = 0;
+	wc.cbSize = sizeof(wc);
+	wc.cbWndExtra = 0;
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = WindowProcedure;
+	wc.lpszClassName = szClassWindow;
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+
+	INT nExitCode = 0;
+
+	if (RegisterClassEx(&wc))
+	{
+		HWND hWindow = CreateWindowEx(0, szClassWindow, TEXT("Игра - \"Накликай приз\""),
+			WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 600,200, NULL,
+			NULL, hInstance, NULL);
+
+		if (MessageBox(0, L"Начать игру?", L"Игра \"Накликай приз\"", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
+			PostQuitMessage(0);
+	
+
+		SetTimer(hWindow, 1, 1, NULL);
+		SetTimer(hWindow, 2, 1000, NULL);
+
+
+
+
+		ShowWindow(hWindow, nCmdShow);
+		UpdateWindow(hWindow);
+
+
+		HDC hDC;
+		wchar_t ch[] = (L"Клацать сюда");
+		hDC = ::GetDC(hWindow);
+		::TextOut(hDC, 200, 75, ch, wcslen(ch));
+		::ReleaseDC(hWindow, hDC);
+
+		MSG message = {};
+
+		
+
+		while (GetMessage(&message, NULL, 0, 0))
+		{
+
+			if (tim == 0)
+			{
+				if (size2 == 0)
+				{
+					KillTimer(hWindow, 1);
+					wsprintf(buf2, L"Вы накликали %d раз за 20 сек. Попробовать еще?", size1);
+					if (MessageBox(0, buf2, L"Попробуйте еще!", MB_OKCANCEL | MB_ICONQUESTION))
+					{
+						SetTimer(hWindow, 1, 1, NULL);
+						SetTimer(hWindow, 2, 1000, NULL);
+						size2 = size1;
+						size1 = 0;
+						tim = 20;
+					}
+				}
+				else
+				{
+					KillTimer(hWindow, 1);
+					if (size1 > size2)
+						wsprintf(buf2, L"Игра окончена. \n Вы накликали в первый раз %d. \n Во второй раз %d\n Новый рекорд", size2, size1);
+					else
+						wsprintf(buf2, L"Игра окончена. \n Вы накликали в первый раз %d. \n Во второй раз %d\n Вы не побили свой рекорд", size2, size1);
+					MessageBox(0, buf2, L"Попробуйте еще!", MB_OK | MB_ICONSTOP);
+						PostQuitMessage(0);
+				}
+			}
+
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		};
+
+		nExitCode = message.wParam;
+	}
+	
+	return nExitCode;
+}
+
+
+LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = 0;
+
+
+
+	switch (nMessage)
+	{
+	case WM_LBUTTONDOWN:
+		size1++;
+		break;
+	case WM_TIMER:
+		switch (wParam)
+		{
+		case 1:
+			wsprintf(buf, L"Прошло -  %d секунд, накликано %d раз", tim, size1);
+			SetWindowText(hWindow, buf);
+			break;
+		case 2:
+			tim--;
+			break;
+		}	
+		break;
+	case WM_DESTROY:
+		wsprintf(buf2, L"Игра окончена. \n Вы накликали в первый раз %d. \n Во второй раз %d\n Вы не побили свой рекорд", size2, size1);
+		MessageBox(0, buf2, L"Досвидания", MB_OK | MB_ICONSTOP);
+		PostQuitMessage(0);
+		break;
+	default:
+		result = DefWindowProc(hWindow, nMessage, wParam, lParam);
+		break;
+	}
+	return result;
+}
