@@ -9,6 +9,7 @@ BOOL CALLBACK EnumChildProc(HWND hWindow, LPARAM lParam);
 LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
 HWND hCalculator;
 int size_butt = 0;
+int temp;
 
 struct Pair
 {
@@ -17,6 +18,7 @@ struct Pair
 };
 Pair arr[50];
 WCHAR butt[50];
+bool chenge = 1;
 
 
 INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLine, INT nCmdShow)
@@ -84,7 +86,7 @@ BOOL CALLBACK EnumChildProc(HWND hWindow, LPARAM lParam)
 		_tcscat_s(arr[size_butt].ClassName, szClassName);
 		size_butt++;
 	}
-	
+	temp = size_butt;
 	return 1;
 }
 
@@ -100,20 +102,26 @@ LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPA
 		break;
 	case WM_TIMER:
 					
-			
+		if (chenge)
 			ShowWindow(arr[size_butt].Handle, HIDE_WINDOW);
+		else
+			ShowWindow(arr[size_butt].Handle, SW_SHOW);
+			
 			ShowWindow(hCalculator, SW_MINIMIZE);
 			ShowWindow(hCalculator, SW_NORMAL);
 			size_butt--;
 
 			if (size_butt == 0)
 			{
-				KillTimer(hWindow, 1);
+				if (!(chenge))  KillTimer(hWindow, 1);
+				size_butt = temp;
+				chenge = 0;
 				HDC hDC;
 				wchar_t ch[] = (L"Калькулятор очищен");
 				hDC = ::GetDC(hWindow);
 				::TextOut(hDC, 200, 75, ch, wcslen(ch));
 				::ReleaseDC(hWindow, hDC);
+
 			}
 		
 		break;
@@ -130,10 +138,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPA
 					TEXT("Error"), MB_OK | MB_ICONERROR);
 			}
 			else
-			{
-
-				
-				
+			{				
 				// Начало перечисления дочерних окон приложения "Калькулятора".
 				EnumChildWindows(hCalculator, EnumChildProc, (LPARAM)hWindow);
 				
