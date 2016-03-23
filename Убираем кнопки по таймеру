@@ -1,0 +1,153 @@
+#include <tchar.h>
+#include <Windows.h>
+
+#pragma comment(linker, "\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' \
+publicKeyToken='6595b64144ccf1df' language='*'\"")
+
+BOOL CALLBACK EnumChildProc(HWND hWindow, LPARAM lParam);
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+HWND hCalculator;
+int size_butt = 0;
+
+struct Pair
+{
+	WCHAR ClassName[255];
+	HWND Handle;
+};
+Pair arr[50];
+WCHAR butt[50];
+
+
+INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLine, INT nCmdShow)
+{
+	TCHAR szClassWindow[] = TEXT("Win32Application");
+	_tcscat_s(butt, TEXT("Button"));
+
+	WNDCLASSEX wc = {};
+	wc.cbClsExtra = 0;
+	wc.cbSize = sizeof(wc);
+	wc.cbWndExtra = 0;
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = WindowProcedure;
+	wc.lpszClassName = szClassWindow;
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+
+	INT nExitCode = 0;
+
+	if (RegisterClassEx(&wc))
+	{
+		HWND hWindow = CreateWindowEx(0, szClassWindow, TEXT("Enumerate Child Windows"),
+			WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL,
+			NULL, hInstance, NULL);
+
+		ShowWindow(hWindow, nCmdShow);
+		UpdateWindow(hWindow);
+
+	
+
+		MSG message = {};
+
+		while (GetMessage(&message, NULL, 0, 0))
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+
+		nExitCode = message.wParam;
+	}
+
+	return nExitCode;
+}
+
+
+
+BOOL CALLBACK EnumChildProc(HWND hWindow, LPARAM lParam)
+{
+	HWND hApplication = (HWND)lParam;
+	
+	CONST INT nSize = 255;
+
+	WCHAR szClassName[nSize] = {};
+	WCHAR szMessage[nSize] = {};
+
+	GetClassName(hWindow, szClassName, nSize);
+
+	if (wcscmp(szClassName, butt) == 0)
+	{
+		arr[size_butt].Handle = hWindow;
+		_tcscat_s(arr[size_butt].ClassName, szClassName);
+		size_butt++;
+	}
+	
+	return 1;
+}
+
+
+LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = 0;
+
+	switch (nMessage)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	case WM_TIMER:
+					
+			
+			ShowWindow(arr[size_butt].Handle, HIDE_WINDOW);
+			ShowWindow(hCalculator, SW_MINIMIZE);
+			ShowWindow(hCalculator, SW_NORMAL);
+			size_butt--;
+
+			if (size_butt == 0)
+			{
+				KillTimer(hWindow, 1);
+				HDC hDC;
+				wchar_t ch[] = (L"Калькулятор очищен");
+				hDC = ::GetDC(hWindow);
+				::TextOut(hDC, 200, 75, ch, wcslen(ch));
+				::ReleaseDC(hWindow, hDC);
+			}
+		
+		break;
+	case WM_KEYDOWN:
+		if (wParam == VK_CONTROL)
+		{
+			hCalculator = FindWindow(
+				TEXT("CalcFrame"), // Имя класса окна. 
+				TEXT("Калькулятор")); // Заголовок окна. 
+			
+			if (!hCalculator)
+			{
+				MessageBox(hWindow, TEXT("You need to start \"Calculator\" first"),
+					TEXT("Error"), MB_OK | MB_ICONERROR);
+			}
+			else
+			{
+
+				
+				
+				// Начало перечисления дочерних окон приложения "Калькулятора".
+				EnumChildWindows(hCalculator, EnumChildProc, (LPARAM)hWindow);
+				
+				SetTimer(hWindow, 1, 1000, NULL);
+			}
+		}
+	
+		
+		
+
+	default:
+		result = DefWindowProc(hWindow, nMessage, wParam, lParam);
+		break;
+	}
+
+	return result;
+}
