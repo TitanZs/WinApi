@@ -1,0 +1,261 @@
+#include <windows.h>
+#include <tchar.h>
+#include <list>
+#include <time.h>
+
+using namespace std;
+
+const int MV_LEFTUP = 0;
+const int MV_LEFTDOWN = 1;
+const int MV_RIGHTUP = 2;
+const int MV_RIGHTDOWN = 3;
+const int BALL_SIZE = 500;
+
+struct Pair
+{
+
+	HWND Handle;
+	RECT r;
+	int direct = -1;
+	HWND bang;
+
+
+};
+Pair arr[250];
+
+
+LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK EnumWindowsProc(HWND hWindow, LPARAM lParam);
+void Bang(Pair &);
+list <Pair> hList;
+
+TCHAR szClassWindow[] = TEXT("Каркасное приложение");
+bool started = false;
+
+int val = 1;
+int size = 0;
+int iter = 0;
+
+
+int WINAPI _tWinMain(HINSTANCE hInst, HINSTANCE hPrevInst,
+	LPTSTR lpszCmdLine, int nCmdShow)
+{
+	srand(time(NULL));
+	HWND hWnd;
+	MSG Msg;
+	WNDCLASSEX wcl;
+	wcl.cbSize = sizeof(wcl);
+	wcl.style = CS_HREDRAW | CS_VREDRAW;
+	wcl.lpfnWndProc = WindowProc;
+	wcl.cbClsExtra = 0;
+	wcl.cbWndExtra = 0;
+	wcl.hInstance = hInst;
+	wcl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcl.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wcl.lpszMenuName = NULL;
+	wcl.lpszClassName = szClassWindow;
+	wcl.hIconSm = NULL;
+
+	if (!RegisterClassEx(&wcl))
+		return 0;
+
+	hWnd = CreateWindowEx(0, szClassWindow, TEXT("Движущееся окно"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
+
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
+
+	
+	EnumWindows(EnumWindowsProc, (LPARAM)hWnd); // Аргумент, передаваемый в функцию обратного вызова.
+
+	while (GetMessage(&Msg, NULL, 0, 0))
+	{
+		TranslateMessage(&Msg);
+		DispatchMessage(&Msg);
+	}
+	return Msg.wParam;
+}
+
+
+
+
+
+BOOL CALLBACK EnumWindowsProc(HWND hWindow, LPARAM lParam)
+{
+	TCHAR str[30];
+	GetClassName(hWindow, str, 30);
+	//&& lstrcmp(str, TEXT("Notepad"))
+	if (IsWindowVisible(hWindow)  == 1)
+	{
+
+		arr[iter].Handle = hWindow;
+		//_tcscat_s(arr[iter].ClassName, szCaption);
+		size++;
+		iter++;
+		if (size > 249)
+		{
+			iter = 0;
+			return 0;
+		}
+
+		//data app;
+		//GetWindowRect(hWindow, &app.rect);
+		//app.h = hWindow;
+		//app.direct = rand() % 4 + 1;
+		//app.bang = 0;
+
+		//hList.push_back(app);
+		//MoveWindow(hWindow, rand() % rectScr.right - width, rand() % rectScr.bottom - high, width, high, 1);
+
+	}
+	return 1;
+}
+
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam,
+	LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+
+	case WM_KEYDOWN:
+		if (wParam == VK_UP)
+		{
+			val += 2;
+		}
+		if (wParam == VK_DOWN)
+		{
+			val -= 2;
+		}
+		if (wParam == VK_RETURN)
+		{
+			SetTimer(hWnd, 1, 1, 0);
+			for (int i = 0; i < size; i++)
+			{
+				HDC hDC;
+				wchar_t ch[256] = (L" ");
+				GetWindowText(arr[i].Handle, ch, 256);
+				hDC = ::GetDC(hWnd);
+				::TextOut(hDC, 5, 0+i*20, ch, wcslen(ch));
+				::ReleaseDC(hWnd, hDC);
+			}
+		
+			
+
+			
+
+		}
+		else if (wParam == VK_ESCAPE)
+		{
+			KillTimer(hWnd, 1);
+			started = false;
+		}
+		break;
+	case WM_TIMER:
+
+		for (int i = 0; i < size; i++)
+		{
+			hWnd = arr[i].Handle;
+			if (!started)
+			{
+				for (int i = 0; i < size; i++)
+				{
+					hWnd = arr[i].Handle;
+					int x = 150;
+					int y = 150;
+					arr[i].direct = 1;
+					MoveWindow(hWnd, rand() % 2000, rand() % 2000, BALL_SIZE, BALL_SIZE, 1);
+					started = true;
+				}
+			}
+			else
+			{
+				RECT r;
+	
+				GetWindowRect(hWnd, &arr[i].r);
+				switch (arr[i].direct)
+				{
+					case MV_LEFTUP:
+					{
+									  if ((arr[i].r.left < val) && (arr[i].r.top < val)) arr[i].direct = MV_RIGHTDOWN;
+									  else if (arr[i].r.left < val) arr[i].direct = MV_RIGHTUP;
+									  else if (arr[i].r.top < val) arr[i].direct = MV_LEFTDOWN;
+									  else arr[i].direct = MV_LEFTUP;
+									  MoveWindow(hWnd, arr[i].r.left -= val, arr[i].r.top -= val, BALL_SIZE, BALL_SIZE, 1);
+						break;
+					}
+					case MV_LEFTDOWN:
+					{
+										if ((arr[i].r.left < val) && (arr[i].r.bottom > GetSystemMetrics(SM_CYSCREEN) - val)) arr[i].direct = MV_RIGHTUP;
+						else if (arr[i].r.left < val) arr[i].direct = MV_RIGHTDOWN;
+						else if (arr[i].r.bottom > GetSystemMetrics(SM_CYSCREEN) - val) arr[i].direct = MV_LEFTUP;
+						else arr[i].direct = MV_LEFTDOWN;
+						MoveWindow(hWnd, arr[i].r.left -= val, arr[i].r.top += val, BALL_SIZE, BALL_SIZE, 1);
+						break;
+					}
+					case MV_RIGHTUP:
+					{
+									   if ((arr[i].r.right > GetSystemMetrics(SM_CXSCREEN) - val) && (arr[i].r.top < val)) arr[i].direct = MV_LEFTDOWN;
+									   else if (arr[i].r.right > GetSystemMetrics(SM_CXSCREEN) - val) arr[i].direct = MV_LEFTUP;
+									   else if (arr[i].r.top < val) arr[i].direct = MV_RIGHTDOWN;
+						else arr[i].direct = MV_RIGHTUP;
+						MoveWindow(hWnd, arr[i].r.left += val, arr[i].r.top -= val, BALL_SIZE, BALL_SIZE, 1);
+						break;
+					}
+					case MV_RIGHTDOWN:
+					{
+										 if ((arr[i].r.right > GetSystemMetrics(SM_CXSCREEN) - val) && (arr[i].r.bottom > GetSystemMetrics(SM_CYSCREEN) - val)) arr[i].direct = MV_LEFTUP;
+										 else if (arr[i].r.right > GetSystemMetrics(SM_CXSCREEN) - val) arr[i].direct = MV_LEFTDOWN;
+										 else if (arr[i].r.bottom > GetSystemMetrics(SM_CYSCREEN) - val) arr[i].direct = MV_RIGHTUP;
+						else arr[i].direct = MV_RIGHTDOWN;
+						MoveWindow(hWnd, arr[i].r.left += val, arr[i].r.top += val, BALL_SIZE, BALL_SIZE, 1);
+						break;
+					}
+
+				}
+			}
+			Bang(*arr);
+		}
+
+		break;
+
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
+}
+void Bang(Pair & app)
+{
+	RECT rect2;
+	RECT rect1;
+	HWND hWindow1 = app.Handle ;
+	GetWindowRect(hWindow1, &rect1);
+
+	POINT Rect[4] = { rect1.left, rect1.top, rect1.right, rect1.top, rect1.right, rect1.bottom, rect1.left, rect1.bottom };
+
+	HRGN Pol = CreatePolygonRgn(Rect, 4, ALTERNATE);
+
+	for (auto it = hList.begin(); it != hList.end(); it++)
+	{
+		int direct1 = app.direct;
+		HWND hWindow2 = it->Handle;
+		if (hWindow1 == hWindow2) continue;
+		GetWindowRect(hWindow2, &rect2);
+		if (RectInRegion(Pol, &rect2) && hWindow2 != app.bang)
+		{
+			if (direct1 == 1) direct1 = 3;
+			else if (direct1 == 2) direct1 = 4;
+			else if (direct1 == 3) direct1 = 1;
+			else if (direct1 == 4) direct1 = 2;
+			app.direct = direct1;
+			app.bang = hWindow2;
+		}
+		else if (!RectInRegion(Pol, &rect2) && hWindow2 == app.bang)
+			app.bang = 0;
+	}
+	DeleteObject(Pol);
+
+	return;
+}
