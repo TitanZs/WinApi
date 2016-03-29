@@ -17,6 +17,7 @@ struct stat
 	int top;
 	int h;
 	int w;
+	HWND hw;
 };
 
 stat list[300];
@@ -47,6 +48,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpszCmdLine, 
 
 BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	int m_x = LOWORD(lParam);
+	int m_y = HIWORD(lParam);
 	switch (message)
 	{
 	case WM_CLOSE:
@@ -73,6 +76,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			left_ = RIGHT + (WIDTH / 2);
 			top_ = BOTTOM + (HEIGHT / 2 - 8);
 			nom++;
+			list[nom].hw = hStatic2;
 			list[nom].h = HEIGHT;
 			list[nom].w = WIDTH;
 			list[nom].top = BOTTOM + HEIGHT;
@@ -91,6 +95,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			left_ = RIGHT - (WIDTH / 2);
 			top_ = BOTTOM + (HEIGHT / 2 - 8);
 			nom++;
+			list[nom].hw = hStatic2;
 			list[nom].h = HEIGHT;
 			list[nom].w = WIDTH;
 			list[nom].top = BOTTOM + HEIGHT;
@@ -109,6 +114,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			left_ = RIGHT + (WIDTH / 2);
 			top_ = BOTTOM - (HEIGHT / 2 + 8);
 			nom++;
+			list[nom].hw = hStatic2;
 			list[nom].h = HEIGHT;
 			list[nom].w = WIDTH;
 			list[nom].top = BOTTOM - HEIGHT;
@@ -122,6 +128,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		left_ = RIGHT - (WIDTH / 2);
 		top_ = BOTTOM - (HEIGHT / 2 + 8);
 		nom++;
+		list[nom].hw = hStatic2;
 		list[nom].h = HEIGHT;
 		list[nom].w = WIDTH;
 		list[nom].top = BOTTOM - HEIGHT;
@@ -135,21 +142,25 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_RBUTTONDOWN:
 		wchar_t ch[50];
-		int m_x = LOWORD(lParam);
-		int m_y = HIWORD(lParam);
 		wsprintf(ch, L" ");
-
 		for (int i = nom; i > 0; i--)
 		{
 			if (m_x > list[i].left &&  m_x < list[i].left + list[i].w && m_y > list[i].top && m_y < list[i].top + list[i].h)
 				wsprintf(ch, L"Номер статика - %d", i);
-
-		
 			SetWindowText(hWnd, ch);
 		}
-		//wsprintf(ch, L"%d, %d, %d", nom, m_x, m_y);
-		//SetWindowText(hWnd, ch);
 		return TRUE;
+	case WM_LBUTTONDBLCLK:
+		for (int i = nom; i > 0; i--)
+		{
+			if (m_x > list[i].left &&  m_x < list[i].left + list[i].w && m_y > list[i].top && m_y < list[i].top + list[i].h)
+			{
+				ShowWindow(list[i].hw, SW_HIDE);
+				//ShowWindow(hCalculator, SW_NORMAL);
+			}
+
+		}
+		break;
 	}
 	
 
