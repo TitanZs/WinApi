@@ -1,0 +1,188 @@
+#include <windows.h>
+#include "resource.h"
+#include <ctime>
+BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
+
+HWND hStatic2;
+TCHAR szCoordinates[20];
+HINSTANCE hInst;
+HBRUSH br1;
+int nom = 0;
+int LEFT, RIGHT, TOP, BOTTOM, WIDTH, HEIGHT;
+int left_, top_;
+HWND mem;
+
+struct stat
+{
+	int left;
+	int top;
+	int h;
+	int w;
+	HWND hw;
+};
+
+stat list[300];
+
+void index_(HWND hWindow, int left, int  top, int& nom)
+{
+	if (nom != 0)
+	{
+		HDC hDC;
+		wchar_t ch[50];
+		wsprintf(ch, L"%d", list[nom].h);
+		hDC = ::GetDC(hWindow);
+		::TextOut(hDC, left, top, ch, wcslen(ch));
+		::ReleaseDC(hWindow, hDC);
+	}
+
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpszCmdLine, int nCmdShow)
+{
+	srand(time(NULL));
+	hInst = hInstance;
+	return DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
+
+}
+
+
+
+BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	int m_x = LOWORD(lParam);
+	int m_y = HIWORD(lParam);
+	switch (message)
+	{
+	case WM_CLOSE:
+		EndDialog(hWnd, 0);
+		return TRUE;
+	case WM_MOUSEMOVE:
+		MoveWindow(mem, RIGHT, BOTTOM, m_x - LEFT, m_y - TOP, true);
+		break;
+	case WM_LBUTTONDOWN:
+
+		LEFT = LOWORD(lParam);
+		TOP = HIWORD(lParam);
+		RIGHT = LOWORD(lParam);
+		BOTTOM = HIWORD(lParam);
+		WIDTH = LEFT - RIGHT;
+		HEIGHT = TOP - BOTTOM;
+		hStatic2 = CreateWindowEx(0, L"static", 0,
+			WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | WS_EX_CLIENTEDGE,
+			RIGHT, BOTTOM, WIDTH, HEIGHT, hWnd, 0, hInst, 0);
+		mem = hStatic2;
+		list[nom].hw = hStatic2;
+		list[nom].h = HEIGHT;
+		list[nom].w = WIDTH;
+		list[nom].top = BOTTOM + HEIGHT;
+		list[nom].left = WIDTH;
+
+		break;
+	case WM_LBUTTONUP:
+		mem = nullptr;
+	/*	RIGHT = LOWORD(lParam);
+		BOTTOM = HIWORD(lParam);
+
+		WIDTH = RIGHT - LEFT;
+		HEIGHT = BOTTOM - TOP;
+		if (RIGHT < LEFT && BOTTOM < TOP)
+		{
+			WIDTH = LEFT - RIGHT;
+			HEIGHT = TOP - BOTTOM;
+			hStatic2 = CreateWindowEx(0, L"static", 0,
+				WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | WS_EX_CLIENTEDGE,
+				RIGHT, BOTTOM, WIDTH, HEIGHT, hWnd, 0, hInst, 0);
+			left_ = RIGHT + (WIDTH / 2);
+			top_ = BOTTOM + (HEIGHT / 2 - 8);
+			nom++;
+			list[nom].hw = hStatic2;
+			list[nom].h = HEIGHT;
+			list[nom].w = WIDTH;
+			list[nom].top = BOTTOM + HEIGHT;
+			list[nom].left = WIDTH;
+			break;
+		}
+
+		if (RIGHT > LEFT && BOTTOM < TOP)
+		{
+			WIDTH = RIGHT - LEFT;
+			HEIGHT = TOP - BOTTOM;
+
+			hStatic2 = CreateWindowEx(0, L"static", 0,
+				WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | WS_EX_CLIENTEDGE,
+				LEFT, BOTTOM, WIDTH, HEIGHT, hWnd, 0, hInst, 0);
+			left_ = RIGHT - (WIDTH / 2);
+			top_ = BOTTOM + (HEIGHT / 2 - 8);
+			nom++;
+			list[nom].hw = hStatic2;
+			list[nom].h = HEIGHT;
+			list[nom].w = WIDTH;
+			list[nom].top = BOTTOM + HEIGHT;
+			list[nom].left = RIGHT - WIDTH;
+			break;
+		}
+
+		if (RIGHT < LEFT && BOTTOM > TOP)
+		{
+			WIDTH = LEFT - RIGHT;
+			HEIGHT = BOTTOM - TOP;
+
+			hStatic2 = CreateWindowEx(0, L"static", 0,
+				WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | WS_EX_CLIENTEDGE,
+				RIGHT, TOP, WIDTH, HEIGHT, hWnd, 0, hInst, 0);
+			left_ = RIGHT + (WIDTH / 2);
+			top_ = BOTTOM - (HEIGHT / 2 + 8);
+			nom++;
+			list[nom].hw = hStatic2;
+			list[nom].h = HEIGHT;
+			list[nom].w = WIDTH;
+			list[nom].top = BOTTOM - HEIGHT;
+			list[nom].left = RIGHT + WIDTH;
+			break;
+		}
+
+		hStatic2 = CreateWindowEx(0, L"static", 0,
+			WS_CHILD | WS_VISIBLE | WS_BORDER | SS_CENTER | WS_EX_CLIENTEDGE,
+			LEFT, TOP, WIDTH, HEIGHT, hWnd, 0, hInst, 0);
+		left_ = RIGHT - (WIDTH / 2);
+		top_ = BOTTOM - (HEIGHT / 2 + 8);
+		nom++;
+		list[nom].hw = hStatic2;
+		list[nom].h = HEIGHT;
+		list[nom].w = WIDTH;
+		list[nom].top = BOTTOM - HEIGHT;
+		list[nom].left = RIGHT - WIDTH;
+		return TRUE;
+		*/
+	case WM_CTLCOLORSTATIC:
+		br1 = CreateSolidBrush(RGB(100, 203, 122));
+		if ((HWND)lParam == hStatic2) return (LRESULT)br1;
+		return TRUE;
+
+	case WM_RBUTTONDOWN:
+		wchar_t ch[50];
+		wsprintf(ch, L" ");
+		for (int i = nom; i > 0; i--)
+		{
+			if (m_x > list[i].left &&  m_x < list[i].left + list[i].w && m_y > list[i].top && m_y < list[i].top + list[i].h)
+				wsprintf(ch, L"Номер статика - %d", i);
+			SetWindowText(hWnd, ch);
+		}
+		return TRUE;
+	case WM_LBUTTONDBLCLK:
+		for (int i = nom; i > 0; i--)
+		{
+			if (m_x > list[i].left &&  m_x < list[i].left + list[i].w && m_y > list[i].top && m_y < list[i].top + list[i].h)
+			{
+				ShowWindow(list[i].hw, SW_HIDE);
+				//ShowWindow(hCalculator, SW_NORMAL);
+			}
+
+		}
+		break;
+	}
+
+
+	//index_(hWnd, left_, top_, nom);
+	return FALSE;
+}
