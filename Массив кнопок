@@ -1,0 +1,108 @@
+#include <stdio.h>
+#include <tchar.h>
+#include <Windows.h>
+
+int const size = 5;
+int h = 20;
+int w = 20;
+wchar_t name[256];
+wchar_t temp[256];
+struct hwn
+{
+	HWND hw;
+};
+hwn buf[size][size];
+
+VOID AddKeyboardMessageInfo(TCHAR chKey, WORD wRepeat, HWND hWnd, WPARAM wParam);
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLine, INT nCmdShow)
+{
+
+	TCHAR szClassWindow[] = TEXT("Окно");
+
+	WNDCLASSEX wc = {};
+	wc.cbClsExtra = 0;
+	wc.cbSize = sizeof(wc);
+	wc.cbWndExtra = 0;
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = WindowProcedure;
+	wc.lpszClassName = szClassWindow;
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+
+	INT nExitCode = 0;
+
+	if (RegisterClassEx(&wc))
+	{
+		HWND hWindow = CreateWindowEx(0, szClassWindow, TEXT("Keyboard Messages"),
+			WS_OVERLAPPEDWINDOW, 250, 250, 400, 400, NULL,
+			NULL, hInstance, NULL);
+
+		for (int i = 0, n=1; i < size; i++, w +=70, h=20)
+		{
+			for (int j = 0; j < size; j++, h += 70, n++)
+			{
+				wsprintf(name, L"%d", n);
+				buf[i][j].hw = CreateWindowEx(0, L"BUTTON", name, WS_CHILD | WS_VISIBLE, h, w, 50, 50, hWindow, 0, GetModuleHandle(0), 0);
+			}
+				
+		}
+
+		ShowWindow(hWindow, nCmdShow);
+		UpdateWindow(hWindow);
+
+		MSG message = {};
+
+		while (GetMessage(&message, NULL, 0, 0))
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+
+		nExitCode = message.wParam;
+	}
+
+	return nExitCode;
+}
+
+
+
+
+LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = 0;
+
+	switch (nMessage)
+	{
+	case WM_CHAR:
+		
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	case WM_COMMAND:
+		for (int i = 0, n =1; i < size; i++)
+		{
+			for (int j = 0; j < size; j++, n++)
+			{
+				if (lParam == (LPARAM)buf[i][j].hw)
+				{
+					wsprintf(name, L"Строка %d, Столбец %d", i+1, j+1);
+					wsprintf(temp, L"Кнопка %d", n );
+					MessageBox(0, name, temp, MB_OK | MB_ICONASTERISK);
+					ShowWindow(buf[i][j].hw, HIDE_WINDOW);
+				}
+			}
+		}
+		return TRUE;
+	default:
+		result = DefWindowProc(hWindow, nMessage, wParam, lParam);
+		break;
+	}
+	return result;
+}
