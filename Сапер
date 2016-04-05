@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <tchar.h>
+#include <Windows.h>
+#include "time.h"
+
+int const size = 25;
+int h = 1;
+int w = 1;
+wchar_t name[256];
+wchar_t temp[256];
+struct hwn
+{
+	HWND hw;
+	bool boom;
+};
+hwn buf[size][size];
+
+void clear(hwn buf[size][size], int i, int j);
+VOID AddKeyboardMessageInfo(TCHAR chKey, WORD wRepeat, HWND hWnd, WPARAM wParam);
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+INT WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLine, INT nCmdShow)
+{
+	srand(time(NULL));
+	TCHAR szClassWindow[] = TEXT("Окно");
+
+	WNDCLASSEX wc = {};
+	wc.cbClsExtra = 0;
+	wc.cbSize = sizeof(wc);
+	wc.cbWndExtra = 0;
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = WindowProcedure;
+	wc.lpszClassName = szClassWindow;
+	wc.lpszMenuName = NULL;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+
+	INT nExitCode = 0;
+
+	if (RegisterClassEx(&wc))
+	{
+		HWND hWindow = CreateWindowEx(0, szClassWindow, TEXT("Keyboard Messages"),
+			WS_OVERLAPPEDWINDOW, 250, 250, 420, 430, NULL,
+			NULL, hInstance, NULL);
+
+		for (int i = 0, n = 1; i < size; i++, w += 16, h = 1)
+		{
+			for (int j = 0; j < size; j++, h += 16, n++)
+			{
+				wsprintf(name, L" " );
+				buf[i][j].hw = CreateWindowEx(0, L"BUTTON", name, WS_CHILD | WS_VISIBLE , h, w, 15, 15, hWindow, 0, GetModuleHandle(0), 0);
+				int b = rand() % 5 + 1;
+				if (b > 3)
+					buf[i][j].boom = 1;
+			}
+
+		}
+
+		ShowWindow(hWindow, nCmdShow);
+		UpdateWindow(hWindow);
+
+		MSG message = {};
+
+		while (GetMessage(&message, NULL, 0, 0))
+		{
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
+
+		nExitCode = message.wParam;
+	}
+
+	return nExitCode;
+}
+LRESULT CALLBACK WindowProcedure(HWND hWindow, UINT nMessage, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = 0;
+
+	switch (nMessage)
+	{
+	case WM_CHAR:
+
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	case WM_COMMAND:
+		for (int i = 0, n = 1; i < size; i++)
+		{
+			for (int j = 0; j < size; j++, n++)
+			{
+				if (lParam == (LPARAM)buf[i][j].hw)
+				{
+					wsprintf(name, L"БУУУУУМ");
+					wsprintf(temp, L"Конец игры %d", n);
+					//MessageBox(0, name, temp, MB_OK | MB_ICONASTERISK);
+					if (buf[i][j].boom)
+						MessageBox(0, name, temp, MB_OK | MB_ICONASTERISK);
+					else
+						clear(buf, i, j);
+					
+				}
+			}
+		}
+		return TRUE;
+	default:
+		result = DefWindowProc(hWindow, nMessage, wParam, lParam);
+		break;					
+	}
+	return result;
+}
+void clear(hwn buf[size][size], int i, int j)
+{
+	int temp_i = i;
+	int temp_j = j;
+	i--; j--;
+	for (; i < temp_i + 10; i++)
+	{
+		for (; j < temp_j + 10; j++)
+		{
+			if (!(buf[i][j].boom))
+				ShowWindow(buf[i][j].hw, BS_PUSHBUTTON);
+		}
+		j -= 10;
+	}
+	//f (i < size-10 && j < size-10)
+	//	clear(buf, i, j);
+}
