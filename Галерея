@@ -1,0 +1,132 @@
+#include <windows.h>
+#include <string>
+#include "resource.h"
+#include <iostream>
+#include <io.h>
+using namespace std;
+
+int i = 0;
+
+#pragma comment(linker, "\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' \
+publicKeyToken='6595b64144ccf1df' language='*'\"")
+
+HWND hStart, hStop, hPicture;
+HBITMAP hBmp[1000];
+
+BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
+int DirSize(char* path);
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpszCmdLine, int nCmdShow)
+{
+	return DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
+}
+
+BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_CLOSE:
+		EndDialog(hWnd, 0);
+		return TRUE;
+
+	case WM_INITDIALOG:
+
+
+		hPicture = CreateWindowEx(0, L"STATIC", 0, WS_CHILD | WS_VISIBLE | WS_DLGFRAME | WS_BORDER,
+			130, 20, 80, 80, hWnd, 0, GetModuleHandle(0), 0);
+
+		SetWindowLong(hPicture, GWL_STYLE, GetWindowLong(hPicture, GWL_STYLE) | SS_BITMAP);
+
+		SendMessage(hPicture, STM_SETIMAGE, WPARAM(IMAGE_BITMAP),
+			(LPARAM)(LoadImage(GetModuleHandle(0), L"C:\\1\\pic\\1.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE)));
+
+		hStart = CreateWindowEx(0, L"BUTTON", L"Start", WS_CHILD | WS_VISIBLE,
+			20, 55, 100, 50, hWnd, 0, GetModuleHandle(0), 0);
+
+		hStop = CreateWindowEx(0, L"BUTTON", L"Stop", WS_CHILD | WS_VISIBLE,
+			236, 55, 100, 50, hWnd, 0, GetModuleHandle(0), 0);
+
+		SetWindowText(hWnd, L"Gallery");
+		MoveWindow(hWnd, 400, 300, 374, 200, TRUE);
+
+		EnableWindow(hStop, FALSE);
+	
+		DirSize("c:\\windows");
+
+
+		return TRUE;
+
+	case WM_COMMAND:
+
+		if (lParam == (LPARAM)hStart)
+		{
+			SetTimer(hWnd, 1, 1000, 0);
+			EnableWindow(hStart, FALSE);
+			EnableWindow(hStop, TRUE);
+			SetFocus(hStop);
+		}
+		if (lParam == (LPARAM)hStop)
+		{
+			KillTimer(hWnd, 1);
+			EnableWindow(hStart, TRUE);
+			EnableWindow(hStop, FALSE);
+			SetFocus(hStart);
+		}
+		return TRUE;
+
+	case WM_TIMER:
+		static int index = 0;
+		index++;
+		if (index > i-1)
+			index = 0;
+		SendMessage(hPicture, STM_SETIMAGE, WPARAM(IMAGE_BITMAP), LPARAM(hBmp[index]));
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int DirSize(char* path)
+{
+
+	char *find = new char[MAX_PATH];
+	strcpy_s(find, MAX_PATH, path);
+	strcat_s(find, MAX_PATH, "\\*.*");
+	_finddata_t *f = new _finddata_t;
+	int handle = _findfirst(find, f);
+	int result = 0;
+	while (result != -1)
+	{
+		if (strcmp(f->name, ".") == 0 || strcmp(f->name, "..") == 0)
+		{
+			result = _findnext(handle, f);
+			continue;
+		}
+		if (f->attrib == 16)
+		{
+			strcpy_s(find, MAX_PATH, path);
+			strcat_s(find, MAX_PATH, "\\");
+			strcat_s(find, MAX_PATH, f->name);
+			DirSize(find);
+
+		}
+		else if (strstr(f->name, "bmp") != 0)
+		{
+			i++;
+			wchar_t* str = new wchar_t[200];
+
+			wsprintf(str, L"%S\\%S", path, f->name);
+			hBmp[i - 1] = (HBITMAP)LoadImage(GetModuleHandle(0), str, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+			delete[]str;
+			
+			result = _findnext(handle, f);
+			continue;
+		}
+
+		result = _findnext(handle, f);
+	}
+	_findclose(handle);
+	delete[] find;
+	delete f;
+	return 1;
+}
