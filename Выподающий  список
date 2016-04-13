@@ -1,0 +1,71 @@
+#include "menu_dlg.h"
+
+#define ID_FILE_EXIT		WM_USER
+#define ID_EDIT_DELETE		WM_USER + 1
+#define ID_EDIT_FINDNEXT	WM_USER + 2
+#define ID_EDIT_TIMEDATE	WM_USER + 3
+#define ID_EDIT_GOTO		WM_USER + 4
+#define ID_VIEW_STATUSBAR	WM_USER + 5
+#define ID_FILE_NEW			WM_USER + 6
+#define ID_FILE_OPEN		WM_USER + 7
+#define ID_FILE_SAVE		WM_USER + 8
+#define ID_FILE_SAVE_AS		WM_USER + 9
+#define ID_FILE_PAGE_SETUP	WM_USER + 10
+#define ID_FILE_PRINT		WM_USER + 11
+#define ID_EDIT_UNDO		WM_USER + 12
+#define ID_EDIT_CUT			WM_USER + 13
+#define ID_EDIT_COPY		WM_USER + 14
+#define ID_EDIT_PASTE		WM_USER + 15
+#define ID_EDIT_FIND		WM_USER + 16
+#define ID_EDIT_REPLACE		WM_USER + 17
+#define ID_EDIT_SELECT_ALL	WM_USER + 18
+
+CMenuBarDlg* CMenuBarDlg::ptr;
+
+CMenuBarDlg::CMenuBarDlg()
+{
+	ptr = this;
+}
+int id;
+TCHAR buf[30] = { 0 };
+
+HMENU hMenu;
+
+BOOL CALLBACK CMenuBarDlg::DlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case  WM_COMMAND:
+		hMenu = GetMenu(hwnd);
+		GetMenuString(hMenu, id, buf, 30, MF_BYCOMMAND);
+		MessageBox(hwnd, buf, TEXT("Динамическое создание меню"), MB_ICONINFORMATION | MB_OK);
+		break;
+	case WM_CLOSE:
+		EndDialog(hwnd, 0);
+
+		break;
+	
+	case WM_INITDIALOG:
+		HMENU m[100];
+
+		m[0] = CreatePopupMenu();
+		for (int i = 0; i < 20; i++) // 30 уже не обрабатывает
+		{
+		
+			m[i+1] = CreatePopupMenu();
+			InsertMenu(m[i], 1, MF_STRING | MF_POPUP, (UINT_PTR)m[i+1], L"Item");
+	
+
+		}
+			
+		HMENU mainMenu = CreateMenu();
+		AppendMenu(mainMenu, MF_POPUP, (UINT_PTR)m[0], TEXT("File"));
+
+
+		SetMenu(hwnd, mainMenu);
+		return TRUE;
+		break;
+
+	}
+	return FALSE;
+}
