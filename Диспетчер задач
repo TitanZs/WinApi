@@ -1,0 +1,315 @@
+#include <windows.h>
+#include <windowsX.h>
+#include "resource.h"
+#include <iostream>
+#include <tchar.h>
+#include <windows.h>
+#include <Tlhelp32.h>
+#include <conio.h>
+#include <commctrl.h>
+#include <stdio.h>
+#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "comctl32.lib")
+
+#pragma comment(linker, "\"/manifestdependency:type='win32' \
+name = 'Microsoft.Windows.Common-Controls' version = '6.0.0.0' processorArchitecture = '*' \
+publicKeyToken='6595b64144ccf1df' language='*'\"")
+wchar_t* str = new wchar_t[200];
+wchar_t* temp = new wchar_t[200];
+BOOL KillTask(wchar_t* ExeFileName);
+
+PROCESSENTRY32 pe32;
+
+class UsingListboxDlg
+{
+public:
+	UsingListboxDlg();
+
+	static BOOL CALLBACK DlgProc(HWND hWnd, UINT mes, WPARAM wp, LPARAM lp);
+	static UsingListboxDlg* ptr;
+
+	BOOL Cls_OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam);
+	void Cls_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify);
+	void Cls_OnClose(HWND hwnd);
+	HWND hDialog, hEdit1, hEdit2, hEdit3, hList1, hButton0, hButton1, hButton2;
+
+	LVCOLUMN lvc;
+	LVITEM   lv;
+};
+
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpszCmdLine, int nCmdShow)
+{
+	UsingListboxDlg dlg;
+	return DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), NULL, UsingListboxDlg::DlgProc);
+}
+
+UsingListboxDlg* UsingListboxDlg::ptr;
+
+UsingListboxDlg::UsingListboxDlg()
+{
+	ptr = this;
+}
+
+void UsingListboxDlg::Cls_OnClose(HWND hwnd)
+{
+	EndDialog(hwnd, 0);
+}
+STARTUPINFO si; 
+PROCESS_INFORMATION pi;
+BOOL UsingListboxDlg::Cls_OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
+{
+
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USEPOSITION | STARTF_USESIZE | STARTF_USESHOWWINDOW;
+	si.dwX = 10;
+	si.dwY = 10;
+	si.dwXSize = 500;
+	si.dwYSize = 250;
+	// si.dwXCountChars = 80;
+	// si.dwYCountChars = 25;
+	si.wShowWindow = SW_SHOW; // SW_MINIMIZE, SW_HIDE
+
+
+	// получим дескрипторы элементов управления
+
+	hButton0 = GetDlgItem(hwnd, IDC_BUTTON1);
+	hButton1 = GetDlgItem(hwnd, IDC_BUTTON2);
+	hButton2 = GetDlgItem(hwnd, IDC_BUTTON3);
+
+	hEdit1 = GetDlgItem(hwnd, IDC_EDIT1);
+	hEdit2 = GetDlgItem(hwnd, IDC_EDIT2);
+	hEdit3 = GetDlgItem(hwnd, IDC_EDIT3);
+
+
+
+	hList1 = CreateWindow(WC_LISTVIEW,
+		NULL,
+		WS_CHILD | WS_VISIBLE | LVS_REPORT,
+		10,
+		10,
+		600,
+		230,
+		hwnd,
+		(HMENU)500,
+		GetModuleHandle(0),
+		NULL);
+
+
+	lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
+	lvc.fmt = LVCFMT_LEFT;
+
+	ListView_SetExtendedListViewStyle(hList1, LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT | LVS_EX_HEADERDRAGDROP);
+
+	// настройка шапки!
+	lvc.iSubItem = 0;
+	lvc.cx = 450;
+	lvc.pszText = TEXT("ID");
+	ListView_InsertColumn(hList1, 0, &lvc);
+	// данные списка!
+
+	HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+	PROCESSENTRY32 pe;
+	memset(&pe, 0, sizeof(pe));
+	pe.dwSize = sizeof(pe);
+	if (Process32First(hSnapShot, &pe))
+	{
+	
+		int i = 0;
+		while (Process32Next(hSnapShot, &pe))
+		{
+			//_tprintf(_T("ID:  %4u  Threads: %5u   priority:  %2u    name:   %s\n"), pe.th32ProcessID, pe.cntThreads, pe.pcPriClassBase, pe.szExeFile);
+
+			lv.iItem = i;
+			
+			ListView_InsertItem(hList1, &lv);
+
+			wsprintf(str, L"%s", pe.szExeFile);
+			ListView_SetItemText(hList1, i, 0, str);
+			
+			i++;
+		}
+	}
+	
+
+	return TRUE;
+}
+
+int items_count = 2;
+
+void UsingListboxDlg::Cls_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
+{
+	switch (id)
+	{
+	case IDC_BUTTON3:
+		TCHAR *path_to_exe; // путь к исполняемому файлу http://stackoverflow.com/questions/11339186/createprocess-fails-with-an-access-violation
+		TCHAR *arguments; // строка с аргументами
+		TCHAR *error_description; // строка с описанием ошибки 
+		path_to_exe = new TCHAR[256]; // The Unicode version of this function, CreateProcessW, can modify the contents of this string. Therefore, this parameter cannot be a pointer to read-only memory (such as a const variable or a literal string). If this parameter is a constant string, the function may cause an access violation.
+		arguments = new TCHAR[256];
+		error_description = new TCHAR[256];
+
+		GetWindowText(hEdit1, temp, 200);
+		wsprintf(str, L"C:\\Windows\\System32\\%s.exe", temp);
+		lstrcpy(path_to_exe, str);
+	
+		lstrcpy(arguments, L"some arguments for console command window");
+
+		if (!CreateProcess(path_to_exe, arguments, 0, 0, false, 0, 0, 0, &si, &pi))
+		{
+			wsprintf(error_description, L"CreateProcess failed! :(\nError number: %d (use error lookup)", GetLastError());
+			MessageBox(hwnd, error_description, L"Error!", MB_OK);
+		}
+		break;
+	case IDC_BUTTON1:
+		SendMessageA(hList1, WM_SETTEXT, WPARAM(0), LPARAM(""));
+
+
+		HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+		PROCESSENTRY32 pe;
+		memset(&pe, 0, sizeof(pe));
+		pe.dwSize = sizeof(pe);
+		if (Process32First(hSnapShot, &pe))
+		{
+			int i = 0;
+			while (Process32Next(hSnapShot, &pe))
+			{
+				//_tprintf(_T("ID:  %4u  Threads: %5u   priority:  %2u    name:   %s\n"), pe.th32ProcessID, pe.cntThreads, pe.pcPriClassBase, pe.szExeFile);
+
+				lv.iItem = i;
+
+				ListView_InsertItem(hList1, &lv);
+
+				wsprintf(str, L"%s", pe.szExeFile);
+				ListView_SetItemText(hList1, i, 0, str);
+
+				i++;
+			}
+		}
+		break;
+	case IDC_BUTTON2:
+		KillTask(L"calc.exe");
+		break;
+	}
+}
+
+BOOL CALLBACK UsingListboxDlg::DlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+		HANDLE_MSG(hwnd, WM_CLOSE, ptr->Cls_OnClose);
+		HANDLE_MSG(hwnd, WM_INITDIALOG, ptr->Cls_OnInitDialog);
+		HANDLE_MSG(hwnd, WM_COMMAND, ptr->Cls_OnCommand);
+	}
+	return FALSE;
+}
+
+
+BOOL KillTask(wchar_t* ExeFileName)
+{
+	bool Co;
+	HANDLE FS;
+	HANDLE hProcess = NULL;
+	DWORD dwError;
+	int result;
+	FS = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	pe32.dwSize = sizeof(pe32);
+	Co = Process32First(FS, &pe32);
+
+	while (Co)
+	{
+
+		if (lstrcmp(pe32.szExeFile, ExeFileName) == 0)
+		{
+			hProcess = OpenProcess(PROCESS_TERMINATE, false, pe32.th32ProcessID);
+
+			if (hProcess == NULL)
+			{
+				if (GetLastError() != ERROR_ACCESS_DENIED)
+					return FALSE;
+
+				OSVERSIONINFO osvi;
+
+				// определяем версию операционной системы
+				osvi.dwOSVersionInfoSize = sizeof(osvi);
+				GetVersionEx(&osvi);
+
+				// мы больше ничего не можем сделать, если это не Windows NT
+				if (osvi.dwPlatformId != VER_PLATFORM_WIN32_NT)
+					return SetLastError(ERROR_ACCESS_DENIED), FALSE;
+
+				// включим привилегию SE_DEBUG_NAME и попробуем еще раз
+
+				TOKEN_PRIVILEGES Priv, PrivOld;
+				DWORD cbPriv = sizeof(PrivOld);
+				HANDLE hToken;
+
+				// получаем токен текущего потока 
+				if (!OpenThreadToken(GetCurrentThread(),
+					TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES,
+					FALSE, &hToken))
+				{
+					if (GetLastError() != ERROR_NO_TOKEN)
+						return FALSE;
+
+					// используем токен процесса, если потоку не назначено
+					// никакого токена
+					if (!OpenProcessToken(GetCurrentProcess(),
+						TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES,
+						&hToken))
+						return FALSE;
+				}
+
+				_ASSERTE(ANYSIZE_ARRAY > 0);
+
+				Priv.PrivilegeCount = 1;
+				Priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+				LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &Priv.Privileges[0].Luid);
+
+				// попробуем включить привилегию
+				if (!AdjustTokenPrivileges(hToken, FALSE, &Priv, sizeof(Priv),
+					&PrivOld, &cbPriv))
+				{
+					dwError = GetLastError();
+					CloseHandle(hToken);
+					return SetLastError(dwError), FALSE;
+				}
+
+				if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+				{
+					// привилегия SE_DEBUG_NAME отсутствует в токене
+					// вызывающего
+					CloseHandle(hToken);
+					return SetLastError(ERROR_ACCESS_DENIED), FALSE;
+				}
+
+				// попробуем открыть описатель процесса еще раз
+				hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
+				dwError = GetLastError();
+
+				// восстанавливаем исходное состояние привилегии
+				AdjustTokenPrivileges(hToken, FALSE, &PrivOld, sizeof(PrivOld),
+					NULL, NULL);
+				CloseHandle(hToken);
+
+				if (hProcess == NULL)
+					return SetLastError(FALSE), NULL;
+			}
+			// пытаемся завершить процесс
+			if (!TerminateProcess(hProcess, (UINT)-1))
+			{
+				dwError = GetLastError();
+				CloseHandle(hProcess);
+				return SetLastError(dwError), FALSE;
+			}
+		}
+		Co = Process32Next(FS, &pe32);
+	}
+
+	CloseHandle(FS);
+	CloseHandle(hProcess);
+
+	return TRUE;
+}
