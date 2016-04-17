@@ -1,0 +1,92 @@
+#include <windows.h>
+#include <wchar.h>
+#include <time.h>
+#include "resource.h"
+
+
+BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
+HWND hListBox1;
+HWND hStart;
+HWND hrButton[3];
+HWND hControlbox;
+double res1 = 0;
+double res2 = 1;
+double res3 = 0;
+double myArray[25];
+void Init(double& r1, double& r2, double& r3, double * myAr, HWND& hWnd)
+{
+	r1 = 0; r2 = 1;    r3 = 0;
+	for (int i = 0; i < 25; i++)
+	{
+		TCHAR text[10];
+		myAr[i] = rand() % 50 - 25;
+		swprintf(text, L"%.0f", myAr[i]);
+		r1 += myArray[i];
+		r2 *= myArray[i];
+		SendMessage(hWnd, LB_ADDSTRING, 0, LPARAM(text));
+	}
+	r3 = r1 / (double)25;
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpszCmdLine, int nCmdShow)
+{
+	srand((size_t)time(nullptr));
+	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
+}
+
+
+BOOL CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wp, LPARAM lp)
+{
+	switch (message)
+	{
+	case WM_CLOSE:
+		EndDialog(hWnd, 0); 
+		return TRUE;
+	case WM_COMMAND:
+	{
+		HWND h = GetFocus();
+		TCHAR text[30];
+		GetWindowText(h, text, 30);
+		if (!lstrcmp(text, TEXT("Start")))
+		{
+			SendMessage(hListBox1, LB_RESETCONTENT, 0, 0);
+			Init(res1, res2, res3, myArray, hListBox1);
+			return TRUE;
+		}
+		if (!lstrcmp(text, TEXT("Сумма")))
+		{
+			swprintf(text, L"%.2f", res1);
+		}
+		if (!lstrcmp(text, TEXT("Произведение")))
+		{
+			swprintf(text, L"%.2e", res2);
+		}
+		if (!lstrcmp(text, TEXT("Среднее")))
+		{
+			swprintf(text, L"%.2f", res3);
+		}
+		SendMessage(hControlbox, LB_RESETCONTENT, 0, 0);
+		SendMessage(hControlbox, LB_ADDSTRING, 0, LPARAM(text));;
+
+	}
+	return TRUE;
+
+
+	case WM_INITDIALOG:
+
+		hListBox1 = CreateWindowEx(WS_EX_CLIENTEDGE, L"LISTBOX", \
+			0, WS_CHILD | WS_VISIBLE | LBS_SORT | LBS_STANDARD, \
+			20, 20, 200, 150, hWnd, (HMENU)500, GetModuleHandle(0), 0);
+		hStart = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("BUTTON"), \
+			TEXT("Start"), WS_CHILD | WS_VISIBLE, 70, 200, 100, 50, \
+			hWnd, 0, GetModuleHandle(0), 0);
+		hControlbox = CreateWindowEx(WS_EX_CLIENTEDGE, L"LISTBOX", \
+			0, WS_CHILD | WS_VISIBLE | LBS_STANDARD, \
+			275, 200, 150, 50, hWnd, 0, GetModuleHandle(0), 0);
+		Init(res1, res2, res3, myArray, hListBox1);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
